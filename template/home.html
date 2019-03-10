@@ -1,0 +1,254 @@
+{template 'common/header'}
+
+<div class="main">
+	<div class="form-horizontal">
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>采集地址：</label>
+			</div>
+			<div class="col-sm-10">
+				<input type="text" value="http://www.cnblogs.com/neru/archive/2010/07/10/1774718.html" id="uri" class="form-control" name="uri"/>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>标题范围：</label>
+			</div>
+			<div class="col-sm-10">
+				<input type="text" value="#cb_post_title_url" class="form-control" name="title"/>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>开始标签：</label>
+			</div>
+			<div class="col-sm-10">
+				<input name="startRange" value="" type="text" class="form-control"/>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>结束标签：</label>
+			</div>
+			<div class="col-sm-10">
+				<input name="endRange" value="" type="text" class="form-control"/>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>排除转载声明范围：</label>
+			</div>
+			<div class="col-sm-10">
+				<input name="reprintSlector" value="" type="text" class="form-control"/>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>排除转载声明内容：</label>
+			</div>
+			<div class="col-sm-10">
+				<input name="reprint" value="" type="text" class="form-control"/>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>排除内容：</label>
+			</div>
+			<div class="col-sm-10">
+				<div class="checkbox">
+					<label>
+						<input value="1" type="checkbox" class="checkbox" name="except"/>
+						a标签
+					</label>
+				</div>
+				<div class="checkbox">
+					<label>
+						<input value="2" type="checkbox" class="checkbox" name="except"/>
+						style标签
+					</label>
+				</div>
+				<div class="checkbox">
+					<label>
+						<input value="0" type="checkbox" class="checkbox" name="except"/>
+						所有html标签
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>图片本地化：</label>
+			</div>
+			<div class="col-sm-10">
+				<div class="checkbox">
+					<label>
+						<input value="1" type="checkbox" class="checkbox" name="local"/>
+						开启后图片上传到服务器
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>作者：</label>
+			</div>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" name="author">
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>文章来源：</label>
+			</div>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" name="source">
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2 control-label">
+				<label>发布时间：</label>
+			</div>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" name="time">
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-2">
+			</div>
+			<div class="col-sm-10">
+				<input id="preview" type="button" class="btn btn-primary" value="预览" name=""/>
+				<input id="write" type="button" class="btn btn-primary" value="入库" name=""/>
+			</div>
+		</div>
+	</div>
+	<div class="preview">
+		
+	</div>
+</div>
+
+<script>
+require(['jquery', 'util'], function($, util){
+	$(function(){
+		var observer = {
+			state:{
+				uri:'https://www.yidianzixun.com/article/0LSOkuIi?searchword=%E8%A1%97%E6%8B%8D',
+				title:'.left-wrapper h2',
+				content:'.content-bd',
+				time:'',
+				startRange:'',
+				endRange:'',
+				except:[],
+				author:'',
+				source:'',
+				reprintSlector:'.yidian-wm-copyright-bottom',
+				reprint:'本文为一点号作者原创，未经授权不得转载',
+			},
+			setValue:function(key,value,obj){
+				if(obj){
+					this.state[key].push(value);
+				}else{
+					this.state[key] = value;
+				}
+			},
+			deleteArray: function(key,value){
+				this.state[key].splice(this.state[key].indexOf(value),1);
+			},
+			getState:function(key){
+				return this.state[key];
+			},
+			formatData:function(data){
+				var dom = $(data);
+				var html = dom.html();
+				var titleSelector = this.state['title'];
+				var contentSelector = this.state['content'];
+				var except = this.state['except'];
+				var reprintSlector =  this.state['reprintSlector'];
+				var reprint =  this.state['reprint'];
+				var content = $(dom).find(contentSelector).html();
+				if(content === undefined){
+					return false;
+				}
+				content = content.replace(/<script.*?>.*?<\/script>/ig,'');
+				if(reprintSlector){
+					console.log($(dom).find(reprintSlector))
+					$(dom).find(reprintSlector).remove();
+				}
+				if(reprint){
+					content = content.replace(reprint,'');
+				}
+				if(except.length > 0){
+					for (var i = except.length - 1; i >= 0; i--) {
+						switch(except[i]){
+							case '0':
+								content = $(dom).find(content).text();
+								break;
+							case '1':
+								content = content.replace(/<a.*?>.*?<\/a>/ig,'');
+								break;
+							case '2':
+								content = content.replace(/<style.*?>.*?<\/style>/ig,'');
+								break;
+							default:
+								break;
+						}
+					}
+				}
+				return {
+					author:this.state['author'],
+					source:this.state['source'],
+					time:this.state['time'],
+					title:$(dom).find(titleSelector).text(),
+					content:content,
+				}
+			}
+		}
+		$('input').on('change',function(e){
+			var $this = $(e.target);
+			var name = $this.attr('name');
+			var val = $this.val();
+			if($this.attr('type') === 'checkbox'){
+				if($this.is(':checked')){
+					observer.setValue(name,val,1);
+				}else{
+					observer.deleteArray(name,val);
+				}
+			}else{
+				observer.setValue(name,val);
+			}
+		})
+		$('#preview').on('click',function(){
+			var url = '<?php echo $this->createWebUrl("collect"); ?>';
+			$.ajax({
+				url:url,
+				data:{
+					uri:encodeURI(observer.state.uri)
+				},
+				type:'post',
+				dataType:'json'
+			}).done(function(res){
+				if(res.code === 1){
+					var data = observer.formatData(res.data);
+					console.log(data)
+					if(!data){
+						util.message('标题或内容为空');
+						retur false;
+					}
+					var html = '<h3>'+data.title+'</h3>';
+					html += '<div class="content">'+data.content+'</div>';
+					html += '<div>'+data.author+'</div>';
+					$('.preview').html(html);
+				}
+				/*var dom = $(data.data);
+				var html = dom.html();
+				var title = $('[name="title"]').val();
+				var content = $('[name="content"]').val()
+				console.log($(dom).find(title).text());
+				console.log($(dom).find(content).html());
+				//$('.g-mn textarea').val(data.data);*/
+			})
+		})
+	});
+});
+</script>
+
+{template 'common/footer'}
