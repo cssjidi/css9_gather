@@ -22,8 +22,14 @@ class Css9_gatherModuleSite extends WeModuleSite {
 		if(isset($_GPC['uri'])){
 			$result = ihttp_get($_GPC['uri']);
 			$json['data'] = $result['content'];
+			var_dump($result['content']);
 			$json['code'] = 1;
 		}
 		die(json_encode($json));
+	}
+	public function doWebPreview(){
+		global $_W,$_GPC;
+
+
 	}
 }
