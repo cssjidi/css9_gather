@@ -1,5 +1,9 @@
 {template 'common/header'}
-
+<style type="text/css">
+	.content img{
+		width:100%;
+	}
+</style>
 <div class="main">
 	<div class="form-horizontal">
 		<div class="form-group">
@@ -7,7 +11,7 @@
 				<label>采集地址：</label>
 			</div>
 			<div class="col-sm-10">
-				<input type="text" value="http://www.cnblogs.com/neru/archive/2010/07/10/1774718.html" id="uri" class="form-control" name="uri"/>
+				<input type="text" value="" id="uri" class="form-control" name="uri"/>
 			</div>
 		</div>
 		<div class="form-group">
@@ -15,12 +19,12 @@
 				<label>标题范围：</label>
 			</div>
 			<div class="col-sm-10">
-				<input type="text" value="#cb_post_title_url" class="form-control" name="title"/>
+				<input type="text" value="" class="form-control" name="title"/>
 			</div>
 		</div>
 		<div class="form-group">
 			<div class="col-sm-2 control-label">
-				<label>开始标签：</label>
+				<label>内容开始标签：</label>
 			</div>
 			<div class="col-sm-10">
 				<input name="startRange" value="" type="text" class="form-control"/>
@@ -28,7 +32,7 @@
 		</div>
 		<div class="form-group">
 			<div class="col-sm-2 control-label">
-				<label>结束标签：</label>
+				<label>内容结束标签：</label>
 			</div>
 			<div class="col-sm-10">
 				<input name="endRange" value="" type="text" class="form-control"/>
@@ -131,17 +135,17 @@ require(['jquery', 'util'], function($, util){
 	$(function(){
 		var observer = {
 			state:{
-				uri:'https://www.yidianzixun.com/article/0LSOkuIi?searchword=%E8%A1%97%E6%8B%8D',
+				uri:'https://www.yidianzixun.com/0LSZXIWA',
 				title:'.left-wrapper h2',
-				content:'.content-bd',
+				content:'',
 				time:'',
-				startRange:'',
-				endRange:'',
+				startRange:'<div class="content-bd">',
+				endRange:'<div class="interact">',
 				except:[],
 				author:'',
-				source:'',
-				reprintSlector:'.yidian-wm-copyright-bottom',
-				reprint:'本文为一点号作者原创，未经授权不得转载',
+				source:'.meta span:first',
+				reprintSlector:'',
+				reprint:'',
 			},
 			setValue:function(key,value,obj){
 				if(obj){
@@ -156,15 +160,46 @@ require(['jquery', 'util'], function($, util){
 			getState:function(key){
 				return this.state[key];
 			},
+			escape2Html: function(str) {
+			 	var arrEntities={'lt':'<','gt':'>','nbsp':' ','amp':'&','quot':'"'};
+			 	return str.replace(/&(lt|gt|nbsp|amp|quot);/ig,function(all,t){return arrEntities[t];
+			 	});
+			},
 			formatData:function(data){
 				var dom = $(data);
 				var html = dom.html();
 				var titleSelector = this.state['title'];
-				var contentSelector = this.state['content'];
+				var startRange = this.state['startRange'];
+				var endRange = this.state['endRange'];
 				var except = this.state['except'];
 				var reprintSlector =  this.state['reprintSlector'];
 				var reprint =  this.state['reprint'];
-				var content = $(dom).find(contentSelector).html();
+				var content = data.replace(/\n/ig,'');
+				var reg = new RegExp('.*?'+startRange+'(.*?)'+endRange+'.*?html>','ig');
+				content = content.replace(reg,'$1');
+				if(!content){
+					return false;
+				}
+				if(except.length > 0){
+					for (var i = except.length - 1; i >= 0; i--) {
+						switch(except[i]){
+							case '0':
+								content = $(dom).find(content).text();
+								break;
+							case '1':
+								content = content.replace(/<a.*?>(.*?)<\/a>/ig,'$1');
+								break;
+							case '2':
+								content = content.replace(/<style.*?>.*?<\/style>/ig,'');
+								break;
+							default:
+								break;
+						}
+					}
+				}
+				//var content = $(dom).find(contentSelector).html();
+
+				/*
 				if(content === undefined){
 					return false;
 				}
@@ -193,9 +228,10 @@ require(['jquery', 'util'], function($, util){
 						}
 					}
 				}
+				*/
 				return {
-					author:this.state['author'],
-					source:this.state['source'],
+					author:$(dom).find(this.state['author']).text().replace(/作者:?：?/ig,''),
+					source:$(dom).find(this.state['source']).text().replace(/来源:?：?/ig,''),
 					time:this.state['time'],
 					title:$(dom).find(titleSelector).text(),
 					content:content,
@@ -217,6 +253,7 @@ require(['jquery', 'util'], function($, util){
 			}
 		})
 		$('#preview').on('click',function(){
+			var $this = $(this)
 			var url = '<?php echo $this->createWebUrl("collect"); ?>';
 			$.ajax({
 				url:url,
@@ -224,18 +261,23 @@ require(['jquery', 'util'], function($, util){
 					uri:encodeURI(observer.state.uri)
 				},
 				type:'post',
-				dataType:'json'
+				dataType:'json',
+				beforeSend:function(){
+					$('.preview').html('');
+					$this.attr('disabled',true).val('正在加载...');
+				}
 			}).done(function(res){
 				if(res.code === 1){
 					var data = observer.formatData(res.data);
 					console.log(data)
 					if(!data){
 						util.message('标题或内容为空');
-						retur false;
+						return false;
 					}
-					var html = '<h3>'+data.title+'</h3>';
-					html += '<div class="content">'+data.content+'</div>';
-					html += '<div>'+data.author+'</div>';
+					var html = '<div style="padding:15px;border:1px solid #ccc;"><h3>采集到的标题:'+data.title+'</h3>';
+					html += '<div class="content"><h3>采集到的内容：</h3>'+observer.escape2Html(data.content)+'</div>';
+					html += '<p><strong>采集到的作者:</strong>'+data.author+'</div>';
+					html += '<p><strong>采集到的来源:</strong>'+data.source+'</div></div>';
 					$('.preview').html(html);
 				}
 				/*var dom = $(data.data);
@@ -245,6 +287,8 @@ require(['jquery', 'util'], function($, util){
 				console.log($(dom).find(title).text());
 				console.log($(dom).find(content).html());
 				//$('.g-mn textarea').val(data.data);*/
+			}).complete(function(){
+				$this.removeAttr('disabled').val('预览');
 			})
 		})
 	});
